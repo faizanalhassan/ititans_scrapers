@@ -2,6 +2,7 @@ import logging
 import time
 import sys
 import json
+import os
 from selenium import webdriver
 from selenium.common import exceptions
 
@@ -15,15 +16,24 @@ LOGGER.setLevel(logging.WARNING)
 
 class Scraper:
     def __init__(self):
-        self.options = webdriver.ChromeOptions()
-        self.options.add_argument("--headless")
-        self.options.add_argument("--log-level=3")
-        self.cd = webdriver.Chrome(options=self.options, service_log_path='NUL')
         self.max_tries = 3
         self.wait_time = 0.5
         self.results = []
         self.tfh = open('temp.jl', 'w')
-        self.ofh = open(sys.argv[1], 'w')
+        if len(sys.argv) == 1:
+            root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            output_dir = os.path.join(root_dir, "results_data_frames", "onsemi.com")
+            os.makedirs(output_dir, exist_ok=True)
+            output_path = os.path.join(output_dir, 'products.json')
+        else:
+            output_path = sys.argv[1]
+        logging.info(f"Output path set: {output_path}")
+        self.ofh = open(output_path, 'w')
+        self.options = webdriver.ChromeOptions()
+        self.options.add_argument("--headless")
+        self.options.add_argument("--log-level=3")
+        self.cd = webdriver.Chrome(options=self.options, service_log_path='NUL')
+
         is_driver_quit = False
         try:
             self.start_job()
