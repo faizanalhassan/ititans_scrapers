@@ -67,6 +67,8 @@ class Scraper:
                     logging.info(f"More product details pages URLs found on this page."
                                  f" Total product pages now: {len(detail_pages_urls)}")
                     continue
+                else:
+                    raise
             time.sleep(2)
             while self.cd.find_elements_by_xpath("//div[@class='px-overlay']//div[@class='spinner-border green']"):
                 logging.debug("New data still loading.")
