@@ -4,8 +4,7 @@
 Download and install Google Chrome if you do not have.
 
 ## Step-2
-Check chrome version and download chromedriver with same version, put into a directory and add that directory to to
- environment path.
+Check chrome version and download chromedriver with same version, put into a directory and add that directory to environment path.
 
 ## Step-3 
 Download and install python3.8 and add the install directory of python to environment path.
