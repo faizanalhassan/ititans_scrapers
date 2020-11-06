@@ -1,14 +1,16 @@
 import logging
 import time
 import sys
-import json
+import traceback
 import os
 import openpyxl
 from openpyxl.styles import Font
 import argparse
 from selenium import webdriver
 from selenium.common import exceptions
-
+from datetime import datetime
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+import re
 logging.basicConfig(format='%(levelname)s %(asctime)s:  %(message)s', level=logging.INFO)
 from selenium.webdriver.remote.remote_connection import LOGGER
 from urllib3.connectionpool import log as urllibLogger
@@ -16,12 +18,15 @@ from urllib3.connectionpool import log as urllibLogger
 urllibLogger.setLevel(logging.WARNING)
 LOGGER.setLevel(logging.WARNING)
 root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+error_reports_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "error_reports")
+os.makedirs(error_reports_dir, exist_ok=True)
 output_dir = os.path.join(root_dir, "results_data_frames", "onsemi.com")
 parser = argparse.ArgumentParser(
     description="This program will get products from onseim.com and put results to output file.")
 parser.add_argument('--output-file-path', '-o', action="store", help="path for output json file.",
                     default=os.path.join(output_dir, 'products.xlsx'))
 parser.add_argument('--browser', action="store_true", help="Turn off headless mode to see browser.")
+parser.add_argument('--skip-products', type=int, default=0, action="store", help="skip products.")
 args = parser.parse_args()
 
 
@@ -30,19 +35,22 @@ class Scraper:
         self.max_tries = 3
         self.wait_time = 0.5
         self.results = []
-        self.wb = openpyxl.Workbook()
-        # self.sheet = self.wb.create_sheet()
-        self.sheet = self.wb.active
         self.row_count = 1
         self.output_path = args.output_file_path
+        self.skip_products = args.skip_products
         os.makedirs(output_dir, exist_ok=True)
-        # if len(sys.argv) == 1:
-        #     os.makedirs(output_dir, exist_ok=True)
-        #     output_path = os.path.join(output_dir, 'products.json')
-        # else:
-        #     output_path = sys.argv[1]
         logging.info(f"Output path set: {self.output_path}")
         # self.ofh = open(output_path, 'w')
+        if self.skip_products > 0:
+            if os.path.isfile(self.output_path):
+                self.wb = openpyxl.load_workbook(self.output_path)
+            else:
+                raise Exception(
+                    "When skip-products value given, previous excel file must be there on output path to append data.")
+        else:
+            self.wb = openpyxl.Workbook()
+        # self.sheet = self.wb.create_sheet()
+        self.sheet = self.wb.active
         self.options = webdriver.ChromeOptions()
         if not args.browser:
             self.options.add_argument("--headless")
@@ -55,6 +63,13 @@ class Scraper:
         except KeyboardInterrupt:
             logging.warning("Keyboard Interrupt. Closing...")
             is_driver_quit = True
+        except:
+            filename = os.path.join(error_reports_dir, f"exception_{datetime.now().strftime('%Y-%m-%dT%I-%M-%S-%p')}")
+            efh = open(filename, 'w')
+            traceback.print_exc(file=efh)
+            efh.close()
+            self.cd.save_screenshot(f'{filename}.png')
+            logging.info(f"Got some exception. Quitting the program. See details in file: {filename}.")
         finally:
             logging.info(f"Total Products found: {len(self.results)}.")
             self.wb.save(self.output_path)
@@ -66,7 +81,8 @@ class Scraper:
 
     def add_row_to_sheet(self, row, bold=False, row_inc=1):
         for c, item in enumerate(row):
-            self.sheet.cell(self.row_count, c+1, value=item).font = Font(bold=bold)
+            v = re.sub(ILLEGAL_CHARACTERS_RE, "", item)
+            self.sheet.cell(self.row_count, c + 1, value=v).font = Font(bold=bold)
         self.row_count += row_inc
 
     def start_job(self):
@@ -81,14 +97,14 @@ class Scraper:
                             [e.get_attribute('href') for e in sub_cat_anchors]
         logging.info(f'Total product details pages: {len(detail_pages_urls)}.')
         i, products_count = 0, 0
-
+        self.cd.implicitly_wait(10)
         while i < len(detail_pages_urls):
             url = detail_pages_urls[i]
             # j += 1
             i += 1
             logging.info(f'Working on page {i}, url = {url}')
             self.cd.get(url)
-            self.cd.implicitly_wait(10)
+
             try:
                 self.cd.find_element_by_xpath("//select[@name='pageSize']/option[.='ALL']").click()
             except exceptions.NoSuchElementException:
@@ -100,10 +116,11 @@ class Scraper:
                     continue
                 else:
                     raise
-            self.cd.implicitly_wait(5)
+            self.cd.implicitly_wait(0)
+            time.sleep(2)
             while self.cd.find_elements_by_xpath("//div[@class='px-overlay']//div[@class='spinner-border green']"):
                 logging.debug("New data still loading.")
-            self.cd.implicitly_wait(0)
+            # self.cd.implicitly_wait(10)
             heading = self.cd.find_element_by_xpath("//div[@id='breadcrumb']/span").text
             self.add_row_to_sheet([heading], bold=True)
             field_names = [self.get_txt_by_xpath('.', e) for e in self.cd.find_elements_by_xpath(
@@ -116,20 +133,27 @@ class Scraper:
             product_rows = self.cd.find_elements_by_xpath("//div[contains(@class, 'px-row ') and contains(@id, 'r_')]")
             logging.info(f"Products found: {len(product_rows)}")
             for row in product_rows:
-                page_data = {}
-                for fn in field_names:
-                    page_data[fn] = self.get_txt_by_xpath(
-                        f"./div[contains(@class, 'px-cell')][{field_names.index(fn) + 1}]"
-                        , row)
-                    logging.debug(f"{fn} = {page_data[fn]}")
-                page_data['verify_url'] = url
-                page_data.pop('Select', None)
-                page_data.pop("Data Sheet", None)
-                self.results.append(page_data)
-                self.add_row_to_sheet(page_data.values())
+                if self.skip_products > 0:
+                    self.skip_products -= 1
+                    self.row_count += 1
+                    logging.info(f"skipping product. skip left {self.skip_products}")
+
+                else:
+                    page_data = {}
+                    for fn in field_names:
+                        page_data[fn] = self.get_txt_by_xpath(
+                            f"./div[contains(@class, 'px-cell')][{field_names.index(fn) + 1}]"
+                            , row)
+                        logging.debug(f"{fn} = {page_data[fn]}")
+                    page_data['verify_url'] = url
+                    page_data.pop('Select', None)
+                    page_data.pop("Data Sheet", None)
+                    self.results.append(page_data)
+                    self.add_row_to_sheet(page_data.values())
                 products_count += 1
                 logging.info(f"Total Products done: {products_count}")
-                self.wb.save(self.output_path)
+                if products_count%10 == 0:
+                    self.wb.save(self.output_path)
             self.row_count += 1
 
     def click_by_xpath(self, xpath, element=None):

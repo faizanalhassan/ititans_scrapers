@@ -1,1 +1,2 @@
-selenium
+urllib3==1.25.11
+openpyxl==3.0.5

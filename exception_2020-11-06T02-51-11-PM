@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "scrapers_codes\onsemi.com\scraper.py", line 57, in __init__
+    self.start_job()
+  File "scrapers_codes\onsemi.com\scraper.py", line 139, in start_job
+    self.add_row_to_sheet(page_data.values())
+  File "scrapers_codes\onsemi.com\scraper.py", line 79, in add_row_to_sheet
+    self.sheet.cell(self.row_count, c+1, value=item).font = Font(bold=bold)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\openpyxl\worksheet\worksheet.py", line 242, in cell
+    cell.value = value
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\openpyxl\cell\cell.py", line 216, in value
+    self._bind_value(value)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\openpyxl\cell\cell.py", line 192, in _bind_value
+    value = self.check_string(value)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\openpyxl\cell\cell.py", line 159, in check_string
+    raise IllegalCharacterError
+openpyxl.utils.exceptions.IllegalCharacterError
