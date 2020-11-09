@@ -54,6 +54,7 @@ class Scraper:
         self.options = webdriver.ChromeOptions()
         if not args.browser:
             self.options.add_argument("--headless")
+            self.options.add_argument("--start-maximized")
         self.options.add_argument("--log-level=3")
         self.cd = webdriver.Chrome(options=self.options, service_log_path='NUL')
 
@@ -81,7 +82,7 @@ class Scraper:
 
     def add_row_to_sheet(self, row, bold=False, row_inc=1):
         for c, item in enumerate(row):
-            v = re.sub(ILLEGAL_CHARACTERS_RE, "", item)
+            v = re.sub(ILLEGAL_CHARACTERS_RE, "?", item)
             self.sheet.cell(self.row_count, c + 1, value=v).font = Font(bold=bold)
         self.row_count += row_inc
 
@@ -97,14 +98,13 @@ class Scraper:
                             [e.get_attribute('href') for e in sub_cat_anchors]
         logging.info(f'Total product details pages: {len(detail_pages_urls)}.')
         i, products_count = 0, 0
-        self.cd.implicitly_wait(10)
         while i < len(detail_pages_urls):
             url = detail_pages_urls[i]
             # j += 1
             i += 1
             logging.info(f'Working on page {i}, url = {url}')
             self.cd.get(url)
-
+            self.cd.implicitly_wait(10)
             try:
                 self.cd.find_element_by_xpath("//select[@name='pageSize']/option[.='ALL']").click()
             except exceptions.NoSuchElementException:
