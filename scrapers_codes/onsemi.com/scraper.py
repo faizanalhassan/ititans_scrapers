@@ -137,7 +137,8 @@ class Scraper:
                     self.skip_products -= 1
                     self.row_count += 1
                     logging.info(f"skipping product. skip left {self.skip_products}")
-
+                    products_count += 1
+                    continue
                 else:
                     page_data = {}
                     for fn in field_names:
