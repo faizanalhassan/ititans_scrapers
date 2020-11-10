@@ -11,6 +11,7 @@ from selenium.common import exceptions
 from datetime import datetime
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 import re
+
 logging.basicConfig(format='%(levelname)s %(asctime)s:  %(message)s', level=logging.INFO)
 from selenium.webdriver.remote.remote_connection import LOGGER
 from urllib3.connectionpool import log as urllibLogger
@@ -66,7 +67,8 @@ class Scraper:
             is_driver_quit = True
         except:
             try:
-                filename = os.path.join(error_reports_dir, f"exception_{datetime.now().strftime('%Y-%m-%dT%I-%M-%S-%p')}")
+                filename = os.path.join(error_reports_dir,
+                                        f"exception_{datetime.now().strftime('%Y-%m-%dT%I-%M-%S-%p')}")
                 efh = open(filename, 'w')
                 traceback.print_exc(file=efh)
                 efh.close()
@@ -120,7 +122,8 @@ class Scraper:
                 except exceptions.NoSuchElementException:
                     new_urls_elements = self.cd.find_elements_by_xpath("//a[.='View Products']")
                     if len(new_urls_elements):
-                        detail_pages_urls += [url := e.get_attribute('href') for e in new_urls_elements if url not in detail_pages_urls]
+                        detail_pages_urls += [url := e.get_attribute('href') for e in new_urls_elements if
+                                              url not in detail_pages_urls]
                         logging.info(f"More product details pages URLs found on this page."
                                      f" Total product pages now: {len(detail_pages_urls)}")
                         is_continue_page_loop = True
@@ -137,8 +140,15 @@ class Scraper:
                 continue
             self.cd.implicitly_wait(0)
             time.sleep(2)
-            while self.cd.find_elements_by_xpath("//div[@class='px-overlay']//div[@class='spinner-border green']"):
+            retry_loading_count = 0
+            while self.cd.find_elements_by_xpath(
+                    "//div[@class='px-overlay']//div[@class='spinner-border green']"):
+                if retry_loading_count > 10:
+                    i -= 1
+                    logging.info('Looks like page is stuck.')
+                    continue
                 logging.debug("New data still loading.")
+                time.sleep(1)
             # self.cd.implicitly_wait(10)
             heading = self.cd.find_element_by_xpath("//div[@id='breadcrumb']/span").text
             self.add_row_to_sheet([heading], bold=True)
@@ -172,7 +182,7 @@ class Scraper:
                     self.add_row_to_sheet(page_data.values())
                 products_count += 1
                 logging.info(f"Total Products done: {products_count}")
-                if products_count%10 == 0:
+                if products_count % 10 == 0:
                     self.wb.save(self.output_path)
             self.row_count += 1
 
