@@ -1,0 +1,16 @@
+Traceback (most recent call last):
+  File "scrapers_codes\onsemi.com\scraper.py", line 63, in __init__
+    self.start_job()
+  File "scrapers_codes\onsemi.com\scraper.py", line 109, in start_job
+    self.cd.find_element_by_xpath("//select[@name='pageSize']/option[.='ALL']").click()
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\webdriver.py", line 394, in find_element_by_xpath
+    return self.find_element(by=By.XPATH, value=xpath)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\webdriver.py", line 976, in find_element
+    return self.execute(Command.FIND_ELEMENT, {
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.NoSuchElementException: Message: no such element: Unable to locate element: {"method":"xpath","selector":"//select[@name='pageSize']/option[.='ALL']"}
+  (Session info: headless chrome=86.0.4240.183)
+

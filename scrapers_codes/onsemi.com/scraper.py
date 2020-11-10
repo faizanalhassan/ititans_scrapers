@@ -65,12 +65,18 @@ class Scraper:
             logging.warning("Keyboard Interrupt. Closing...")
             is_driver_quit = True
         except:
-            filename = os.path.join(error_reports_dir, f"exception_{datetime.now().strftime('%Y-%m-%dT%I-%M-%S-%p')}")
-            efh = open(filename, 'w')
-            traceback.print_exc(file=efh)
-            efh.close()
-            self.cd.save_screenshot(f'{filename}.png')
-            logging.info(f"Got some exception. Quitting the program. See details in file: {filename}.")
+            try:
+                filename = os.path.join(error_reports_dir, f"exception_{datetime.now().strftime('%Y-%m-%dT%I-%M-%S-%p')}")
+                efh = open(filename, 'w')
+                traceback.print_exc(file=efh)
+                efh.close()
+                self.cd.save_screenshot(f'{filename}.png')
+                hfh = open(filename + ".html", 'w')
+                hfh.write(str(self.cd.page_source))
+                hfh.close()
+                logging.info(f"Got some exception. Quitting the program. See details in file: {filename}.")
+            except:
+                traceback.print_exc(file=sys.stdout)
         finally:
             logging.info(f"Total Products found: {len(self.results)}.")
             self.wb.save(self.output_path)
@@ -105,17 +111,30 @@ class Scraper:
             logging.info(f'Working on page {i}, url = {url}')
             self.cd.get(url)
             self.cd.implicitly_wait(10)
-            try:
-                self.cd.find_element_by_xpath("//select[@name='pageSize']/option[.='ALL']").click()
-            except exceptions.NoSuchElementException:
-                new_urls = self.cd.find_elements_by_xpath("//a[.='View Products']")
-                if len(new_urls):
-                    detail_pages_urls += [e.get_attribute('href') for e in new_urls]
-                    logging.info(f"More product details pages URLs found on this page."
-                                 f" Total product pages now: {len(detail_pages_urls)}")
-                    continue
-                else:
-                    raise
+            page_error_count = 0
+            is_continue_page_loop = False
+            while True:
+                try:
+                    self.cd.find_element_by_xpath("//select[@name='pageSize']/option[.='ALL']").click()
+                    break
+                except exceptions.NoSuchElementException:
+                    new_urls_elements = self.cd.find_elements_by_xpath("//a[.='View Products']")
+                    if len(new_urls_elements):
+                        detail_pages_urls += [url := e.get_attribute('href') for e in new_urls_elements if url not in detail_pages_urls]
+                        logging.info(f"More product details pages URLs found on this page."
+                                     f" Total product pages now: {len(detail_pages_urls)}")
+                        is_continue_page_loop = True
+                        break
+                    else:
+                        if self.cd.execute_script(
+                                "return document.body.innerText.includes('An error has occurred in our System. The erro"
+                                "r message has been captured and will be investigated')") and page_error_count < 10:
+                            self.cd.refresh()
+                            page_error_count += 1
+                        else:
+                            raise
+            if is_continue_page_loop:
+                continue
             self.cd.implicitly_wait(0)
             time.sleep(2)
             while self.cd.find_elements_by_xpath("//div[@class='px-overlay']//div[@class='spinner-border green']"):
