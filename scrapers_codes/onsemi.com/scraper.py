@@ -132,9 +132,11 @@ class Scraper:
                         is_continue_page_loop = True
                         break
                     else:
-                        if self.cd.execute_script(
-                                "return document.body.innerText.includes('An error has occurred in our System. The erro"
-                                "r message has been captured and will be investigated')") and page_error_count < 10:
+                        if page_error_count < 10:
+                            # self.cd.execute_script(
+                            #     "return document.body.innerText.includes('An error has occurred in our System. The erro"
+                            #     "r message has been captured and will be investigated')") and
+                            logging.error(f"Getting error on page {i}, Trying again ({page_error_count})")
                             self.cd.refresh()
                             page_error_count += 1
                         else:
