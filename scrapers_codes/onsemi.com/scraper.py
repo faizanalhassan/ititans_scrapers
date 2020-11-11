@@ -122,7 +122,7 @@ class Scraper:
                 except exceptions.NoSuchElementException:
                     new_urls_elements = self.cd.find_elements_by_xpath("//a[.='View Products']")
                     if len(new_urls_elements):
-                        for new_url in new_urls_elements:
+                        for new_url in [new_url_e.get_attribute('href') for new_url_e in new_urls_elements]:
                             if new_url not in detail_pages_urls:
                                 detail_pages_urls.append(new_url)
                         # detail_pages_urls += [new_url := e.get_attribute('href') for e in new_urls_elements if
