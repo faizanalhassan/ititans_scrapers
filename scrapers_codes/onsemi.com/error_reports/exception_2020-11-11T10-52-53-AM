@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "C:/Users/Faizan/source/repos/ititans_scrapers/scrapers_codes/onsemi.com/scraper.py", line 64, in __init__
+    self.start_job()
+  File "C:/Users/Faizan/source/repos/ititans_scrapers/scrapers_codes/onsemi.com/scraper.py", line 114, in start_job
+    self.cd.get(url)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\webdriver.py", line 333, in get
+    self.execute(Command.GET, {'url': url})
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\webdriver.py", line 321, in execute
+    self.error_handler.check_response(response)
+  File "C:\Users\Faizan\source\repos\ititans_scrapers\.env\lib\site-packages\selenium\webdriver\remote\errorhandler.py", line 242, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.TimeoutException: Message: timeout: Timed out receiving message from renderer: 298.022
+  (Session info: chrome=86.0.4240.183)
+

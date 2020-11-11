@@ -73,7 +73,7 @@ class Scraper:
                 traceback.print_exc(file=efh)
                 efh.close()
                 self.cd.save_screenshot(f'{filename}.png')
-                hfh = open(filename + ".html", 'w')
+                hfh = open(filename + ".html", 'w', encoding='utf-8')
                 hfh.write(str(self.cd.page_source))
                 hfh.close()
                 logging.info(f"Got some exception. Quitting the program. See details in file: {filename}.")
@@ -122,8 +122,11 @@ class Scraper:
                 except exceptions.NoSuchElementException:
                     new_urls_elements = self.cd.find_elements_by_xpath("//a[.='View Products']")
                     if len(new_urls_elements):
-                        detail_pages_urls += [url := e.get_attribute('href') for e in new_urls_elements if
-                                              url not in detail_pages_urls]
+                        for new_url in new_urls_elements:
+                            if new_url not in detail_pages_urls:
+                                detail_pages_urls.append(new_url)
+                        # detail_pages_urls += [new_url := e.get_attribute('href') for e in new_urls_elements if
+                        #                       new_url not in detail_pages_urls]
                         logging.info(f"More product details pages URLs found on this page."
                                      f" Total product pages now: {len(detail_pages_urls)}")
                         is_continue_page_loop = True
